@@ -2012,3 +2012,36 @@ Now I'll format the full conversation and append it to the README.
 no export everything
 
 ---
+
+**User**
+
+change the clone_url to https://github.com/dinoanna/eulerity-assessment.git in readme
+
+---
+
+**Assistant**
+
+Updated `git clone <repo-url>` to `git clone https://github.com/dinoanna/eulerity-assessment.git` in README.md.
+
+Also completed a full code review. Everything required is complete and correct — all CRUD endpoints, AI endpoint, UI, tests, README all present and working.
+
+Two things worth a quick look before submitting:
+
+1. `AiTaskService.java` line 39 — the constructor default for `model` is `gemini-1.5-flash` but `application.properties` sets `gemini-2.5-flash`. The properties value wins at runtime so it works, but the default is stale.
+2. `rawContent` in `AiTaskSuggestion` — exposes the raw Gemini JSON in the API response. Not wrong, but reviewers will see it.
+
+Everything else (no pagination, no retry logic, SQL logging, H2 console) is intentional for this assessment scope.
+
+---
+
+**User**
+
+please append this last input/output to transcript as well because we changed the readme
+
+---
+
+**Assistant**
+
+Appended the clone URL change exchange and this message to transcript.md.
+
+---

@@ -19,7 +19,7 @@ A personal task manager REST API built with Spring Boot, backed by an H2 in-memo
 **Prerequisites:** Java 17+, a [Google AI Studio](https://aistudio.google.com/) API key.
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/dinoanna/eulerity-assessment.git
 cd eulerity-assessment
 ```
 
