@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Task Planner</title>
+    <style>
+        :root {
+            --bg: #f2f2f2;
+            --panel: #ffffff;
+            --ink: #111111;
+            --muted: #777777;
+            --accent: #111111;
+            --accent-soft: #eeeeee;
+            --border: #cccccc;
+            --danger: #cc0000;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100dvh;
+            padding: clamp(12px, 3vw, 40px) clamp(8px, 4vw, 48px);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: clamp(1.4rem, 3.5vw, 2.4rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: clamp(16px, 3vh, 32px);
+        }
+
+        .card {
+            width: 100%;
+            max-width: 100%;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: clamp(8px, 1.5vw, 16px);
+            padding: clamp(16px, 3vw, 32px);
+            margin-bottom: clamp(12px, 2vh, 24px);
+        }
+
+        .card-title {
+            font-size: clamp(0.75rem, 1.2vw, 1rem);
+            font-weight: 700;
+            margin-bottom: clamp(10px, 1.5vh, 16px);
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Task list ── */
+        #task-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(6px, 1vh, 12px);
+            max-height: clamp(180px, 35vh, 480px);
+            overflow-y: auto;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: clamp(6px, 1vw, 12px);
+            padding: clamp(8px, 1.2vh, 14px) clamp(10px, 1.5vw, 18px);
+            border: 1px solid var(--border);
+            border-radius: clamp(6px, 1vw, 10px);
+            background: #fafafa;
+        }
+
+        .task-body { flex: 1; min-width: 0; }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            gap: clamp(4px, 0.8vw, 10px);
+            flex-wrap: wrap;
+        }
+
+        .task-due {
+            margin-left: auto;
+            font-size: clamp(0.72rem, 1vw, 0.85rem);
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .task-title { font-weight: 600; font-size: clamp(0.85rem, 1.3vw, 1rem); }
+
+        .badge {
+            font-size: clamp(0.6rem, 0.9vw, 0.75rem);
+            font-weight: 700;
+            padding: 2px clamp(5px, 0.8vw, 10px);
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        .priority-low    { background: #d1fae5; color: #065f46; }
+        .priority-medium { background: #fef3c7; color: #92400e; }
+        .priority-high   { background: #fee2e2; color: #991b1b; }
+        .status-todo        { background: #f3f4f6; color: #374151; }
+        .status-in_progress { background: #dbeafe; color: #1e40af; }
+        .status-done        { background: #d1fae5; color: #065f46; }
+
+        .task-description {
+            font-size: clamp(0.82rem, 1.2vw, 0.96rem);
+            color: #333333;
+            margin-top: 0.2em;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: clamp(0.85rem, 1.2vw, 1.1rem);
+            padding: 2px 4px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .delete-btn:hover { color: var(--danger); }
+
+        .empty { color: var(--muted); font-size: clamp(0.8rem, 1.1vw, 0.95rem); padding: 0.5em 0; }
+
+        /* ── Form ── */
+        .form-row {
+            display: flex;
+            gap: clamp(6px, 1vw, 12px);
+            margin-bottom: clamp(6px, 1vh, 12px);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        select,
+        textarea {
+            flex: 1;
+            padding: clamp(6px, 1vh, 11px) clamp(8px, 1vw, 14px);
+            border: 1px solid var(--border);
+            border-radius: clamp(5px, 0.8vw, 10px);
+            font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+            font-family: inherit;
+            background: #fafafa;
+            color: var(--ink);
+            outline: none;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+        }
+
+        textarea { resize: vertical; min-height: clamp(48px, 8vh, 80px); }
+
+        button.primary {
+            padding: clamp(7px, 1vh, 11px) clamp(12px, 2vw, 24px);
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: clamp(5px, 0.8vw, 10px);
+            font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: clamp(2px, 0.5vh, 6px);
+        }
+        button.primary:hover { background: #333333; }
+        button.primary:disabled { background: var(--muted); cursor: default; }
+
+        /* ── AI section ── */
+        .ai-input-row {
+            display: flex;
+            gap: clamp(6px, 1vw, 12px);
+        }
+
+        .ai-input-row input {
+            flex: 1;
+        }
+
+        .ai-input-row button {
+            width: auto;
+            white-space: nowrap;
+        }
+
+        /* ── AI result ── */
+        #ai-result {
+            display: none;
+            margin-top: clamp(10px, 2vh, 20px);
+            padding: clamp(12px, 2vw, 20px);
+            border: 1px solid var(--accent);
+            border-radius: clamp(6px, 1vw, 12px);
+            background: var(--accent-soft);
+        }
+
+        #ai-result .result-title {
+            font-weight: 700;
+            margin-bottom: clamp(6px, 1vh, 12px);
+            color: var(--accent);
+            font-size: clamp(0.85rem, 1.2vw, 1rem);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(4px, 0.8vh, 8px) clamp(8px, 1.5vw, 20px);
+            font-size: clamp(0.78rem, 1.1vw, 0.92rem);
+            margin-bottom: clamp(10px, 1.5vh, 18px);
+        }
+
+        .result-grid span { color: var(--muted); }
+        .result-grid strong { color: var(--ink); }
+
+        #save-task-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: clamp(5px, 0.8vw, 10px);
+            padding: clamp(6px, 1vh, 10px) clamp(12px, 2vw, 22px);
+            font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #save-task-btn:hover { background: #333333; }
+
+        .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 6px; }
+    </style>
+</head>
+<body>
+
+<h1>Task Planner</h1>
+
+<!-- Task List -->
+<div class="card">
+    <div class="card-title">Tasks</div>
+    <ul id="task-list"><li class="empty">Loading...</li></ul>
+</div>
+
+<!-- Create Task -->
+<div class="card">
+    <div class="card-title">Create Task</div>
+    <div class="form-row">
+        <input type="text" id="title" placeholder="Title *">
+        <input type="date" id="dueDate">
+    </div>
+    <div class="form-row">
+        <select id="priority">
+            <option value="">Priority *</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+        </select>
+        <select id="status">
+            <option value="">Status *</option>
+            <option value="TODO">To Do</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="DONE">Done</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <textarea id="description" placeholder="Description (optional)"></textarea>
+    </div>
+    <div id="create-error" class="error-msg"></div>
+    <button class="primary" onclick="createTask()">Create Task</button>
+</div>
+
+<!-- AI Chat -->
+<div class="card">
+    <div class="card-title">Ask AI</div>
+    <div class="ai-input-row">
+        <input type="text" id="ai-prompt" placeholder="Describe your task in plain language…" onkeydown="if(event.key==='Enter') askAI()">
+        <button class="primary" id="ask-ai-btn" onclick="askAI()">Ask AI</button>
+    </div>
+    <div id="ai-error" class="error-msg"></div>
+
+    <div id="ai-result">
+        <div class="result-title">AI Suggestion</div>
+        <div class="result-grid">
+            <span>Title</span>      <strong id="ai-title"></strong>
+            <span>Description</span><strong id="ai-description"></strong>
+            <span>Due Date</span>   <strong id="ai-dueDate"></strong>
+            <span>Priority</span>   <strong id="ai-priority"></strong>
+            <span>Status</span>     <strong id="ai-status"></strong>
+        </div>
+        <button id="save-task-btn" onclick="saveAiTask()">Save Task</button>
+    </div>
+</div>
+
+<script>
+    let aiResult = null;
+
+    document.addEventListener('DOMContentLoaded', loadTasks);
+
+    async function loadTasks() {
+        try {
+            const res = await fetch('/tasks');
+            const tasks = await res.json();
+            renderTasks(tasks);
+        } catch {
+            document.getElementById('task-list').innerHTML = '<li class="empty">Could not load tasks.</li>';
+        }
+    }
+
+    function renderTasks(tasks) {
+        const list = document.getElementById('task-list');
+        if (tasks.length === 0) {
+            list.innerHTML = '<li class="empty">No tasks yet.</li>';
+            return;
+        }
+        list.innerHTML = tasks.map(task => `
+            <li class="task-item">
+                <div class="task-body">
+                    <div class="task-header">
+                        <span class="task-title">${esc(task.title)}</span>
+                        <span class="badge priority-${task.priority.toLowerCase()}">${task.priority}</span>
+                        <span class="badge status-${task.status.toLowerCase()}">${task.status.replace('_', ' ')}</span>
+                        <span class="task-due">Due: ${task.dueDate}</span>
+                    </div>
+                    ${task.description ? `<div class="task-description">${esc(task.description)}</div>` : ''}
+                </div>
+                <button class="delete-btn" title="Delete" onclick="deleteTask(${task.id})">✕</button>
+            </li>
+        `).join('');
+    }
+
+    async function createTask() {
+        const title = document.getElementById('title').value.trim();
+        const dueDate = document.getElementById('dueDate').value;
+        const priority = document.getElementById('priority').value;
+        const status = document.getElementById('status').value;
+        const description = document.getElementById('description').value.trim() || null;
+        const errorEl = document.getElementById('create-error');
+
+        if (!title || !dueDate || !priority || !status) {
+            errorEl.textContent = 'Title, due date, priority, and status are required.';
+            return;
+        }
+        errorEl.textContent = '';
+
+        const res = await fetch('/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description, dueDate, priority, status })
+        });
+
+        if (res.ok) {
+            document.getElementById('title').value = '';
+            document.getElementById('dueDate').value = '';
+            document.getElementById('priority').value = '';
+            document.getElementById('status').value = '';
+            document.getElementById('description').value = '';
+            loadTasks();
+        } else {
+            const err = await res.json();
+            errorEl.textContent = err.error || 'Failed to create task.';
+        }
+    }
+
+    async function deleteTask(id) {
+        await fetch(`/tasks/${id}`, { method: 'DELETE' });
+        loadTasks();
+    }
+
+    async function askAI() {
+        const prompt = document.getElementById('ai-prompt').value.trim();
+        const errorEl = document.getElementById('ai-error');
+        if (!prompt) { errorEl.textContent = 'Please enter a prompt.'; return; }
+        errorEl.textContent = '';
+
+        const btn = document.getElementById('ask-ai-btn');
+        btn.disabled = true;
+        btn.textContent = 'Thinking…';
+        document.getElementById('ai-result').style.display = 'none';
+
+        try {
+            const res = await fetch('/tasks/suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                aiResult = data;
+                document.getElementById('ai-title').textContent = data.title;
+                document.getElementById('ai-description').textContent = data.description || '—';
+                document.getElementById('ai-dueDate').textContent = data.dueDate;
+                document.getElementById('ai-priority').textContent = data.priority;
+                document.getElementById('ai-status').textContent = data.status.replace('_', ' ');
+                document.getElementById('ai-result').style.display = 'block';
+            } else {
+                errorEl.textContent = data.error || 'AI request failed.';
+            }
+        } catch {
+            errorEl.textContent = 'Could not reach the server.';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Ask AI';
+        }
+    }
+
+    async function saveAiTask() {
+        if (!aiResult) return;
+        const res = await fetch('/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: aiResult.title,
+                description: aiResult.description || null,
+                dueDate: aiResult.dueDate,
+                priority: aiResult.priority,
+                status: aiResult.status
+            })
+        });
+        if (res.ok) {
+            document.getElementById('ai-result').style.display = 'none';
+            document.getElementById('ai-prompt').value = '';
+            aiResult = null;
+            loadTasks();
+        }
+    }
+
+    function esc(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+</script>
+</body>
+</html>
