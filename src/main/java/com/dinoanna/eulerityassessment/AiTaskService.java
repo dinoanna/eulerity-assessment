@@ -36,7 +36,7 @@ public class AiTaskService {
             ObjectMapper objectMapper,
             @Value("${ai.base-url:https://generativelanguage.googleapis.com}") String baseUrl,
             @Value("${ai.api-key:}") String apiKey,
-            @Value("${ai.model:gemini-1.5-flash}") String model) {
+            @Value("${ai.model:gemini-2.5-flash}") String model) {
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
             requestFactory.setConnectTimeout(15000);
             requestFactory.setReadTimeout(15000);
