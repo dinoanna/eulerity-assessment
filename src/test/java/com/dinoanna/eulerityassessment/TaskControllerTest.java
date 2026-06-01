@@ -96,6 +96,42 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.error").exists());
     }
 
+    @Test
+    void createTask_atCapReturnsConflictWithCandidates() throws Exception {
+        Task existing = new Task("existing", null, DUE_DATE, Priority.HIGH, TaskStatus.TODO);
+        existing.setId(5L);
+        when(taskService.create(any())).thenReturn(new CreateResult.NeedsPreview(java.util.Arrays.asList(null, 5L)));
+        when(taskService.findById(5L)).thenReturn(existing);
+        when(taskService.demotedPriorityFor(any())).thenReturn(Priority.MEDIUM);
+
+        String body = objectMapper.writeValueAsString(
+                new TaskRequest("eleventh", null, DUE_DATE, Priority.HIGH, TaskStatus.TODO));
+
+        mockMvc.perform(post("/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.candidates.length()").value(2))
+                .andExpect(jsonPath("$.candidates[0].isNew").value(true))
+                .andExpect(jsonPath("$.candidates[0].title").value("eleventh"))
+                .andExpect(jsonPath("$.candidates[0].taskId").doesNotExist())
+                .andExpect(jsonPath("$.candidates[1].isNew").value(false))
+                .andExpect(jsonPath("$.candidates[1].taskId").value(5));
+    }
+
+    @Test
+    void createTask_withDemoteParam_returnsCreated() throws Exception {
+        Task saved = sampleTask();
+        saved.setPriority(Priority.HIGH);
+        when(taskService.confirmCreate(any(), eq("new"))).thenReturn(saved);
+
+        mockMvc.perform(post("/tasks").param("demote", "new")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequestJson()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1));
+    }
+
     // GET /tasks
 
     @Test
