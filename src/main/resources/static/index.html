@@ -228,6 +228,40 @@
         #save-task-btn:hover { background: #333333; }
 
         .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 6px; }
+
+        /* ── Cap preview (HIGH priority conflict) ── */
+        #cap-preview {
+            display: none;
+            margin-top: clamp(10px, 2vh, 20px);
+            padding: clamp(12px, 2vw, 20px);
+            border: 1px solid var(--accent);
+            border-radius: clamp(6px, 1vw, 12px);
+            background: var(--accent-soft);
+        }
+
+        .cap-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(8px, 1.5vw, 16px);
+        }
+
+        .cap-card {
+            border: 1px solid var(--border);
+            border-radius: clamp(5px, 0.8vw, 10px);
+            padding: clamp(10px, 1.5vw, 16px);
+            background: var(--panel);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cap-card-label {
+            font-weight: 700;
+            font-size: clamp(0.78rem, 1.1vw, 0.92rem);
+            margin-bottom: clamp(8px, 1vh, 12px);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--accent);
+        }
     </style>
 </head>
 <body>
@@ -266,6 +300,32 @@
     </div>
     <div id="create-error" class="error-msg"></div>
     <button class="primary" onclick="createTask()">Create Task</button>
+
+    <div id="cap-preview">
+        <div class="result-title">HIGH priority cap reached — pick one task to demote</div>
+        <div class="cap-options">
+            <div class="cap-card">
+                <div class="cap-card-label" id="cap-label-0"></div>
+                <div class="result-grid">
+                    <span>Title</span>   <strong id="cap-title-0"></strong>
+                    <span>Due Date</span><strong id="cap-due-0"></strong>
+                    <span>Current</span> <strong id="cap-current-0"></strong>
+                    <span>New</span>     <strong id="cap-new-0"></strong>
+                </div>
+                <button class="primary" id="cap-btn-0">Demote this one</button>
+            </div>
+            <div class="cap-card">
+                <div class="cap-card-label" id="cap-label-1"></div>
+                <div class="result-grid">
+                    <span>Title</span>   <strong id="cap-title-1"></strong>
+                    <span>Due Date</span><strong id="cap-due-1"></strong>
+                    <span>Current</span> <strong id="cap-current-1"></strong>
+                    <span>New</span>     <strong id="cap-new-1"></strong>
+                </div>
+                <button class="primary" id="cap-btn-1">Demote this one</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- AI Chat -->
@@ -292,6 +352,7 @@
 
 <script>
     let aiResult = null;
+    let pendingCapRequest = null;
 
     document.addEventListener('DOMContentLoaded', loadTasks);
 
@@ -341,22 +402,62 @@
         }
         errorEl.textContent = '';
 
+        const body = { title, description, dueDate, priority, status };
         const res = await fetch('/tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, description, dueDate, priority, status })
+            body: JSON.stringify(body)
         });
 
         if (res.ok) {
-            document.getElementById('title').value = '';
-            document.getElementById('dueDate').value = '';
-            document.getElementById('priority').value = '';
-            document.getElementById('status').value = '';
-            document.getElementById('description').value = '';
+            resetCreateForm();
+            document.getElementById('cap-preview').style.display = 'none';
             loadTasks();
+        } else if (res.status === 409) {
+            const data = await res.json();
+            renderCapPreview(data.candidates, body);
         } else {
             const err = await res.json();
             errorEl.textContent = err.error || 'Failed to create task.';
+        }
+    }
+
+    function resetCreateForm() {
+        document.getElementById('title').value = '';
+        document.getElementById('dueDate').value = '';
+        document.getElementById('priority').value = '';
+        document.getElementById('status').value = '';
+        document.getElementById('description').value = '';
+    }
+
+    function renderCapPreview(candidates, originalBody) {
+        pendingCapRequest = originalBody;
+        candidates.forEach((c, i) => {
+            document.getElementById(`cap-label-${i}`).textContent = c.isNew ? 'Your new task' : 'Existing task';
+            document.getElementById(`cap-title-${i}`).textContent = c.title;
+            document.getElementById(`cap-due-${i}`).textContent = c.dueDate;
+            document.getElementById(`cap-current-${i}`).textContent = c.currentPriority;
+            document.getElementById(`cap-new-${i}`).textContent = c.newPriority;
+            document.getElementById(`cap-btn-${i}`).onclick = () => confirmDemotion(c.isNew ? 'new' : c.taskId);
+        });
+        document.getElementById('cap-preview').style.display = 'block';
+    }
+
+    async function confirmDemotion(demote) {
+        if (!pendingCapRequest) return;
+        const res = await fetch(`/tasks?demote=${encodeURIComponent(demote)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pendingCapRequest)
+        });
+        if (res.ok) {
+            document.getElementById('cap-preview').style.display = 'none';
+            resetCreateForm();
+            pendingCapRequest = null;
+            loadTasks();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            document.getElementById('create-error').textContent = err.error || 'Confirmation failed.';
         }
     }
 

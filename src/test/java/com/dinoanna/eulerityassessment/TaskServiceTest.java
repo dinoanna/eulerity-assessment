@@ -10,6 +10,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,6 +24,9 @@ class TaskServiceTest {
 
     @Mock
     TaskRepository taskRepository;
+
+    @Mock
+    PlatformTransactionManager txManager;
 
     @InjectMocks
     TaskService taskService;
@@ -40,12 +45,15 @@ class TaskServiceTest {
 
     @Test
     void create_savesAndReturnsTask() {
+        when(txManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         when(taskRepository.save(any(Task.class))).thenReturn(sampleTask(1L));
 
-        Task result = taskService.create(sampleRequest());
+        CreateResult result = taskService.create(sampleRequest());
 
-        assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getTitle()).isEqualTo("Buy groceries");
+        assertThat(result).isInstanceOf(CreateResult.Saved.class);
+        Task task = ((CreateResult.Saved) result).task();
+        assertThat(task.getId()).isEqualTo(1L);
+        assertThat(task.getTitle()).isEqualTo("Buy groceries");
         verify(taskRepository).save(any(Task.class));
     }
 

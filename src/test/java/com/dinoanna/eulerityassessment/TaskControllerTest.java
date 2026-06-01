@@ -48,7 +48,7 @@ class TaskControllerTest {
 
     @Test
     void createTask_returnsCreated() throws Exception {
-        when(taskService.create(any())).thenReturn(sampleTask());
+        when(taskService.create(any())).thenReturn(new CreateResult.Saved(sampleTask()));
 
         mockMvc.perform(post("/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -62,7 +62,7 @@ class TaskControllerTest {
     void createTask_acceptsNullDescription() throws Exception {
         Task taskWithoutDescription = new Task("Buy groceries", null, DUE_DATE, Priority.LOW, TaskStatus.TODO);
         taskWithoutDescription.setId(1L);
-        when(taskService.create(any())).thenReturn(taskWithoutDescription);
+        when(taskService.create(any())).thenReturn(new CreateResult.Saved(taskWithoutDescription));
 
         String body = "{\"title\":\"Buy groceries\",\"dueDate\":\"2026-05-10\",\"priority\":\"LOW\",\"status\":\"TODO\"}";
 
